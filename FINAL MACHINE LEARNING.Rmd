@@ -1,0 +1,80 @@
+---
+title: "Machine Learning Practical Assignment"
+author: "Alexander Johnston"
+date: "August 30, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+The training data for this project is available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data is available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+##Environment Setting and Reading in Data
+
+```{r}
+setwd("D:/My Documents/Data Science")
+set.seed(19)
+library(caret)
+library(rpart)
+library(randomForest)
+Urltrain <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+Urltest <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+training <- read.csv(url(Urltrain))
+testing  <- read.csv(url(Urltest))
+```
+
+##Visualising Data
+```{r}
+str(training)
+```
+This revealed that a large number of datapoints were NA, and that we had no need of the first seven columns as predictors.
+
+##Data Cleaning
+```{r}
+training <- training[,-(1:7)]
+
+NACATCH <- sapply(training, function(x) mean(is.na(x))) > 0.9
+
+training <- training[,NACATCH==FALSE]
+
+NZV <- nearZeroVar(training)
+
+training <- training[, -NZV]
+
+```
+
+##Partitioning Training Dataset
+Partitioning was performed to get a 70% training set, and a 30% test set.
+```{r}
+inTrain  <- createDataPartition(training$classe, p=0.7, list=FALSE)
+TrainSet <- training[inTrain, ]
+TestSet  <- training[-inTrain, ]
+```
+
+##Decision Tree Model
+```{r}
+decisionTreeModel <- rpart(classe ~ ., data = TrainSet, method = "class")
+decisionTreePrediction <- predict(decisionTreeModel, TestSet, type = "class")
+
+confusionMatrix(decisionTreePrediction, TestSet$classe)
+```
+
+##Random Forest
+```{r}
+randomforestmodel <- randomForest(classe ~ ., data=TrainSet, method="class")
+
+randomforestprediction <- predict(randomforestmodel,TestSet, type="class")
+
+confusionMatrix(randomforestprediction, TestSet$classe)
+```
+
+Through these predictions, we can see that the random forest model is the most effective, with greater accuracy.Consequently this model will allow us to accurately predict the results.
